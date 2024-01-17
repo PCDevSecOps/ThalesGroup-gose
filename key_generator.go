@@ -28,7 +28,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
-	"github.com/ThalesIgnite/gose/jose"
+	"github.com/IceManGreen/gose/jose"
 )
 
 const minimumRsaKeySize = 2048 // The minimum RSA key size allowable as defined https://tools.ietf.org/html/rfc7518#section-3.5

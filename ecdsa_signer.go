@@ -29,7 +29,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/ThalesIgnite/gose/jose"
+	"github.com/IceManGreen/gose/jose"
 	"math/big"
 )
 

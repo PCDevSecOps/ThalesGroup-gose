@@ -5,8 +5,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"github.com/ThalesIgnite/crypto11"
-	"github.com/ThalesIgnite/gose"
-	"github.com/ThalesIgnite/gose/jose"
+	"github.com/IceManGreen/gose"
+	"github.com/IceManGreen/gose/jose"
 )
 
 // AsymmetricDecryptionKey implements RSA OAEP using SHA1 decryption.
