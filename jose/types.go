@@ -79,6 +79,8 @@ const (
 	AlgA192GCM Alg = "A192GCM"
 	//AlgA256GCM AES GCM using 256-bit key
 	AlgA256GCM Alg = "A256GCM"
+	//AlgA256CBC AES CBC using 256-bit key
+	AlgA256CBC Alg = "A256CBC"
 	// AlgDir direct encryption for use with JWEs
 	AlgDir Alg = "dir"
 	// AlgRSAOAEP RSA OAEP Key encryption for use with JWEs
