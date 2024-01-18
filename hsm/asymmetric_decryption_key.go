@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
-	"github.com/ThalesIgnite/crypto11"
+	"github.com/IceManGreen/crypto11"
 	"github.com/IceManGreen/gose"
 	"github.com/IceManGreen/gose/jose"
 )

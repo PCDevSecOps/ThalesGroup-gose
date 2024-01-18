@@ -121,6 +121,18 @@ type AuthenticatedEncryptionKey interface {
 	Open(operation jose.KeyOps, nonce, ciphertext, aad, tag []byte) (plaintext []byte, err error)
 }
 
+// BlockModeEncryptionKey implements encryption and decryption operations with block modes and symmetric keys
+type BlockModeEncryptionKey interface {
+	Key
+	Algorithmed
+	// GenerateIV generates an IV of the correct size for use in blocked operations.
+	GenerateIV() ([]byte, error)
+	// Seal the given plaintext returning ciphertext and authentication tag.
+	Seal(operation jose.KeyOps, iv, plaintext []byte) (ciphertext []byte, err error)
+	// Open and validate the given ciphertext and tag returning the plaintext.
+	Open(operation jose.KeyOps, iv, ciphertext []byte) (plaintext []byte, err error)
+}
+
 // JwtSigner implements generation of signed compact JWTs as defined by https://tools.ietf.org/html/rfc7519.
 type JwtSigner interface {
 	// Issuer returns the identity of the issuing authority

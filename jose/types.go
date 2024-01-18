@@ -135,6 +135,8 @@ const (
 	EncA192GCM Enc = "A192GCM"
 	// EncA256GCM AES GCM 256 Enc type
 	EncA256GCM Enc = "A256GCM"
+	// EncA256CBC AES CBC 256 Enc type
+	EncA256CBC Enc = "A256CBC"
 
 	// DeflateZip deflate type
 	DeflateZip Zip = "DEF"

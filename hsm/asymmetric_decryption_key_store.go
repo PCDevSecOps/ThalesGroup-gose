@@ -1,7 +1,7 @@
 package hsm
 
 import (
-	"github.com/ThalesIgnite/crypto11"
+	"github.com/IceManGreen/crypto11"
 	"github.com/IceManGreen/gose"
 )
 

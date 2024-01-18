@@ -26,25 +26,23 @@ import (
 )
 
 var (
-	algToEncMap = map[jose.Alg]jose.Enc{
-		jose.AlgA128GCM: jose.EncA128GCM,
-		jose.AlgA192GCM: jose.EncA192GCM,
-		jose.AlgA256GCM: jose.EncA256GCM,
+	cbcAlgToEncMap = map[jose.Alg]jose.Enc{
+		jose.AlgA256CBC: jose.EncA256CBC,
 	}
 )
 
-// JweDirectEncryptionEncryptorImpl implementation of JweDirectEncryptionEncryptor interface.
-type JweDirectEncryptionEncryptorImpl struct {
-	key        AuthenticatedEncryptionKey
+// JweDirectEncryptionEncryptorBlockMode implementation of JweDirectEncryptionEncryptor interface.
+type JweDirectEncryptionEncryptorBlockMode struct {
+	key        BlockModeEncryptionKey
 	externalIV bool
 }
 
-// Encrypt encrypt and authenticate the given plaintext and AAD returning a compact JWE.
-func (encryptor *JweDirectEncryptionEncryptorImpl) Encrypt(plaintext, aad []byte) (string, error) {
+// Encrypt encrypts and authenticate the given plaintext and AAD returning a compact JWE.
+func (encryptor *JweDirectEncryptionEncryptorBlockMode) Encrypt(plaintext, aad []byte) (string, error) {
 	var nonce []byte
 	var err error
 	if !encryptor.externalIV {
-		nonce, err = encryptor.key.GenerateNonce()
+		nonce, err = encryptor.key.GenerateIV()
 		if err != nil {
 			return "", err
 		}
@@ -65,7 +63,7 @@ func (encryptor *JweDirectEncryptionEncryptorImpl) Encrypt(plaintext, aad []byte
 				Alg: jose.AlgDir,
 				Kid: encryptor.key.Kid(),
 			},
-			Enc: algToEncMap[encryptor.key.Algorithm()],
+			Enc: cbcAlgToEncMap[encryptor.key.Algorithm()],
 			JweCustomHeaderFields: customHeaderFields,
 		},
 		EncryptedKey: []byte{},
@@ -76,27 +74,27 @@ func (encryptor *JweDirectEncryptionEncryptorImpl) Encrypt(plaintext, aad []byte
 		return "", err
 	}
 
-	if jwe.Ciphertext, jwe.Tag, err = encryptor.key.Seal(jose.KeyOpsEncrypt, jwe.Iv, jwe.Plaintext, jwe.MarshalledHeader); err != nil {
+	if jwe.Ciphertext, err = encryptor.key.Seal(jose.KeyOpsEncrypt, jwe.Iv, jwe.Plaintext); err != nil {
 		return "", err
 	}
-	if encryptor.externalIV {
-		/*
-			If using an externally-generated IV this will have been returned in the tag field
-			So we trim the tag field and update the IV field
-		*/
-		var throwawayNonceToGetLength []byte
-		if throwawayNonceToGetLength, err = encryptor.key.GenerateNonce(); nil != err {
-			return "", err
-		}
-		jwe.Iv = jwe.Tag[len(jwe.Tag)-len(throwawayNonceToGetLength):]
-		jwe.Tag = jwe.Tag[:len(jwe.Tag)-len(throwawayNonceToGetLength)]
-	}
+	//if encryptor.externalIV {
+	//	/*
+	//		If using an externally-generated IV this will have been returned in the tag field
+	//		So we trim the tag field and update the IV field
+	//	*/
+	//	var throwawayNonceToGetLength []byte
+	//	if throwawayNonceToGetLength, err = encryptor.key.GenerateIV(); nil != err {
+	//		return "", err
+	//	}
+	//	jwe.Iv = jwe.Tag[len(jwe.Tag)-len(throwawayNonceToGetLength):]
+	//	jwe.Tag = jwe.Tag[:len(jwe.Tag)-len(throwawayNonceToGetLength)]
+	//}
 	return jwe.Marshal(), nil
 }
 
-// NewJweDirectEncryptorImpl construct an instance of a JweDirectEncryptionEncryptorImpl.
-func NewJweDirectEncryptorImpl(key AuthenticatedEncryptionKey, externalIV bool) *JweDirectEncryptionEncryptorImpl {
-	return &JweDirectEncryptionEncryptorImpl{
+// NewJweDirectEncryptorBlockMode construct an instance of a JweDirectEncryptionEncryptorBlockMode.
+func NewJweDirectEncryptorBlockMode(key BlockModeEncryptionKey, externalIV bool) *JweDirectEncryptionEncryptorBlockMode {
+	return &JweDirectEncryptionEncryptorBlockMode{
 		key:        key,
 		externalIV: externalIV,
 	}
