@@ -39,12 +39,13 @@ type AesCbcCryptor struct {
 
 // NewAesCbcCryptor create a new instance of an AesCbcCryptor from the supplied parameters.
 // It implements AuthenticatedEncryptionKey
-func NewAesCbcCryptor(rng io.Reader, kid string, alg jose.Alg, operations []jose.KeyOps) (BlockModeEncryptionKey, error) {
+func NewAesCbcCryptor(blockModeCipher cipher.BlockMode, rng io.Reader, kid string, alg jose.Alg, operations []jose.KeyOps) (BlockModeEncryptionKey, error) {
 	return &AesCbcCryptor{
 		kid:  kid,
 		alg:  alg,
 		rng:  rng,
 		opts: operations,
+		blockMode: blockModeCipher,
 	}, nil
 }
 

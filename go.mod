@@ -9,8 +9,8 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/miekg/pkcs11 v1.0.3-0.20190429190417-a667d056470f // indirect
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/miekg/pkcs11 v1.1.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.1.0 // indirect
 	github.com/thales-e-security/pool v0.0.2 // indirect

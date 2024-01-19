@@ -94,8 +94,8 @@ func (encryptor *JweDirectEncryptionEncryptorAuthenticated) Encrypt(plaintext, a
 	return jwe.Marshal(), nil
 }
 
-// NewJweDirectEncryptorImpl construct an instance of a JweDirectEncryptionEncryptorAuthenticated.
-func NewJweDirectEncryptorImpl(key AuthenticatedEncryptionKey, externalIV bool) *JweDirectEncryptionEncryptorAuthenticated {
+// NewJweDirectEncryptorAuthenticated construct an instance of a JweDirectEncryptionEncryptorAuthenticated.
+func NewJweDirectEncryptorAuthenticated(key AuthenticatedEncryptionKey, externalIV bool) *JweDirectEncryptionEncryptorAuthenticated {
 	return &JweDirectEncryptionEncryptorAuthenticated{
 		key:        key,
 		externalIV: externalIV,
