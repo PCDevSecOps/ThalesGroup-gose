@@ -49,7 +49,7 @@ func (e *JweRsaKeyEncryptionEncryptorImpl) Encrypt(plaintext, aad []byte) (strin
 				Alg: jose.AlgRSAOAEP,
 				Kid: e.recipientJwk.Kid(),
 			},
-			Enc:                   algToEncMap[cekJwk.Alg()],
+			Enc:                   gcmAlgToEncMap[cekJwk.Alg()],
 			JweCustomHeaderFields: customHeaderFields,
 		},
 		EncryptedKey: encryptedKey,

@@ -57,7 +57,7 @@ func (decryptor *JweDirectDecryptorImpl) Decrypt(jwe string) (plaintext, aad []b
 		return
 	}
 
-	enc, ok := algToEncMap[key.Algorithm()]
+	enc, ok := gcmAlgToEncMap[key.Algorithm()]
 	if !ok {
 		err = ErrInvalidEncryption
 		return
