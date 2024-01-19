@@ -31,7 +31,9 @@ var (
 	}
 )
 
-// JweDirectEncryptionEncryptorBlockMode implementation of JweDirectEncryptionEncryptor interface.
+// JweDirectEncryptionEncryptorBlockMode
+// implementation of JweDirectEncryptionEncryptor interface for BlockMode
+// BlockMode is more efficient than Block for bulk operations
 type JweDirectEncryptionEncryptorBlockMode struct {
 	key        BlockModeEncryptionKey
 	externalIV bool
@@ -73,6 +75,23 @@ func (encryptor *JweDirectEncryptionEncryptorBlockMode) Encrypt(plaintext, aad [
 	if err = jwe.MarshalHeader(); err != nil {
 		return "", err
 	}
+
+	// TODO
+	//  1. Au moment du chiffrement, détecter si la chaine est <16 bytes.
+	//  Si oui :
+	//  - conserver la longueur initial dans un champ du header du jwe
+	//  - rajouter des '0' pour compléter jusqu'à 16 bytes (suffixe)
+	//  - chiffre la chaine de 16 bytes
+	//  Sinon chiffrer tel quel avec le padding.
+	//  2. Au moment du déchiffrement, détecter dans le header si la chaine plaintext était <16bytes.
+	//  Si oui :
+	//  - déchiffrer puis enlever les suffixes jusqu'à obtenir la chaine de taille indiquée dans le header
+	//  - retourner cette chaine de taille <16 bytes
+	//  Sinon retourner tel quel.
+
+	// According to the OASIS :
+	// http://docs.oasis-open.org/pkcs11/pkcs11-curr/v2.40/cos01/pkcs11-curr-v2.40-cos01.html
+	// Encrypting plaintext under 16 bytes should be possible, but due to code limitations it is impossible here.
 
 	if jwe.Ciphertext, err = encryptor.key.Seal(jose.KeyOpsEncrypt, jwe.Iv, jwe.Plaintext); err != nil {
 		return "", err
