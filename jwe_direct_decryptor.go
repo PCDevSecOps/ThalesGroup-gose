@@ -27,7 +27,7 @@ var _ JweDecryptor = (*JweDirectDecryptorImpl)(nil)
 
 // JweDirectDecryptorImpl is a concrete implementation of the JweDirectDecryptor interface.
 type JweDirectDecryptorImpl struct {
-	keystore map[string]AuthenticatedEncryptionKey
+	keystore map[string]AeadEncryptionKey
 }
 
 // Decrypt and verify the given JWE returning both the plaintext and AAD.
@@ -50,7 +50,7 @@ func (decryptor *JweDirectDecryptorImpl) Decrypt(jwe string) (plaintext, aad []b
 		return
 	}
 
-	var key AuthenticatedEncryptionKey
+	var key AeadEncryptionKey
 	var exists bool
 	if key, exists = decryptor.keystore[jweStruct.Header.Kid]; !exists {
 		err = ErrUnknownKey
@@ -81,10 +81,10 @@ func (decryptor *JweDirectDecryptorImpl) Decrypt(jwe string) (plaintext, aad []b
 }
 
 // NewJweDirectDecryptorImpl create a new instance of a JweDirectDecryptorImpl.
-func NewJweDirectDecryptorImpl(keys []AuthenticatedEncryptionKey) *JweDirectDecryptorImpl {
+func NewJweDirectDecryptorImpl(keys []AeadEncryptionKey) *JweDirectDecryptorImpl {
 	// Create map out of our list of keys. The map is keyed in Kid.
 	decryptor := &JweDirectDecryptorImpl{
-		keystore: map[string]AuthenticatedEncryptionKey{},
+		keystore: map[string]AeadEncryptionKey{},
 	}
 	for _, key := range keys {
 		decryptor.keystore[key.Kid()] = key

@@ -26,30 +26,55 @@ import (
 )
 
 var (
-	gcmAlgToEncMap = map[jose.Alg]jose.Enc{
-		jose.AlgA128GCM: jose.EncA128GCM,
-		jose.AlgA192GCM: jose.EncA192GCM,
-		jose.AlgA256GCM: jose.EncA256GCM,
+	cbcAlgToEncMap = map[jose.Alg]jose.Enc{
+		jose.AlgA256CBC: jose.EncA256CBC,
 	}
 )
 
-// JweDirectEncryptionEncryptorAuthenticated implementation of JweDirectEncryptionEncryptor interface.
-type JweDirectEncryptionEncryptorAuthenticated struct {
-	key        AuthenticatedEncryptionKey
-	externalIV bool
+// JweDirectEncryptorBlock
+// implementation of JweDirectEncryptionEncryptor interface for BlockMode
+// BlockMode is more efficient than Block for bulk operations
+type JweDirectEncryptorBlock struct {
+	key BlockEncryptionKey
+	iv  []byte
 }
 
-// Encrypt encrypt and authenticate the given plaintext and AAD returning a compact JWE.
-func (encryptor *JweDirectEncryptionEncryptorAuthenticated) Encrypt(plaintext, aad []byte) (string, error) {
-	var nonce []byte
+// getEncryptorBlockIV generates a new iv if the encryptor's one is empty
+// otherwise it returns the iv provided by the encryptor
+func (encryptor *JweDirectEncryptorBlock) getEncryptorBlockIV() ([]byte, error) {
+	var iv []byte
 	var err error
-	if !encryptor.externalIV {
-		nonce, err = encryptor.key.GenerateNonce()
+	if encryptor.iv == nil {
+		iv, err = encryptor.key.GenerateIV()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+	} else {
+		iv = encryptor.iv
 	}
+	return iv, err
+}
 
+// makeJwe builds the JWE structure
+func (encryptor *JweDirectEncryptorBlock) makeJwe(customHeaderFields jose.JweCustomHeaderFields, plaintext, iv []byte) *jose.Jwe {
+	return &jose.Jwe{
+		Header: jose.JweHeader{
+			JwsHeader: jose.JwsHeader{
+				Alg: jose.AlgDir,
+				Kid: encryptor.key.Kid(),
+			},
+			Enc:                   cbcAlgToEncMap[encryptor.key.Algorithm()],
+			JweCustomHeaderFields: customHeaderFields,
+		},
+		EncryptedKey: []byte{},
+		Iv:           iv,
+		Plaintext:    plaintext,
+	}
+}
+
+// Encrypt encrypts the given plaintext and AAD returning a compact JWE.
+func (encryptor *JweDirectEncryptorBlock) Encrypt(plaintext, aad []byte) (string, error) {
+	// aad, if any
 	var blob *jose.Blob
 	var customHeaderFields jose.JweCustomHeaderFields
 	if len(aad) > 0 {
@@ -58,25 +83,15 @@ func (encryptor *JweDirectEncryptionEncryptorAuthenticated) Encrypt(plaintext, a
 			OtherAad: blob,
 		}
 	}
-
-	jwe := &jose.Jwe{
-		Header: jose.JweHeader{
-			JwsHeader: jose.JwsHeader{
-				Alg: jose.AlgDir,
-				Kid: encryptor.key.Kid(),
-			},
-			Enc:                   gcmAlgToEncMap[encryptor.key.Algorithm()],
-			JweCustomHeaderFields: customHeaderFields,
-		},
-		EncryptedKey: []byte{},
-		Iv:           nonce,
-		Plaintext:    plaintext,
-	}
+	// iv
+	iv, err := encryptor.getEncryptorBlockIV()
+	// jwe
+	jwe := encryptor.makeJwe(customHeaderFields, plaintext, iv)
 	if err = jwe.MarshalHeader(); err != nil {
 		return "", err
 	}
-
-	if jwe.Ciphertext, jwe.Tag, err = encryptor.key.Seal(jose.KeyOpsEncrypt, jwe.Iv, jwe.Plaintext, jwe.MarshalledHeader); err != nil {
+	// encrypt
+	if jwe.Ciphertext, err = encryptor.key.Seal(jose.KeyOpsEncrypt, jwe.Iv, jwe.Plaintext); err != nil {
 		return "", err
 	}
 	if encryptor.externalIV {
@@ -85,7 +100,7 @@ func (encryptor *JweDirectEncryptionEncryptorAuthenticated) Encrypt(plaintext, a
 			So we trim the tag field and update the IV field
 		*/
 		var throwawayNonceToGetLength []byte
-		if throwawayNonceToGetLength, err = encryptor.key.GenerateNonce(); nil != err {
+		if throwawayNonceToGetLength, err = encryptor.key.GenerateIV(); nil != err {
 			return "", err
 		}
 		jwe.Iv = jwe.Tag[len(jwe.Tag)-len(throwawayNonceToGetLength):]
@@ -94,10 +109,10 @@ func (encryptor *JweDirectEncryptionEncryptorAuthenticated) Encrypt(plaintext, a
 	return jwe.Marshal(), nil
 }
 
-// NewJweDirectEncryptorAuthenticated construct an instance of a JweDirectEncryptionEncryptorAuthenticated.
-func NewJweDirectEncryptorAuthenticated(key AuthenticatedEncryptionKey, externalIV bool) *JweDirectEncryptionEncryptorAuthenticated {
-	return &JweDirectEncryptionEncryptorAuthenticated{
-		key:        key,
-		externalIV: externalIV,
+// NewJweDirectEncryptorBlock construct an instance of a JweDirectEncryptorBlock.
+func NewJweDirectEncryptorBlock(key BlockEncryptionKey, iv []byte) *JweDirectEncryptorBlock {
+	return &JweDirectEncryptorBlock{
+		key: key,
+		iv:  iv,
 	}
 }

@@ -29,24 +29,25 @@ import (
 )
 
 // AesCbcCryptor provides AES CBC encryption and decryption functions.
+// It implements BlockEcryptionKey
 type AesCbcCryptor struct {
 	kid  string
 	alg  jose.Alg
-	blockMode cipher.BlockMode
+	blockCipher cipher.Block
 	opts []jose.KeyOps
 	rng  io.Reader
 }
 
 // NewAesCbcCryptor create a new instance of an AesCbcCryptor from the supplied parameters.
-// It implements AuthenticatedEncryptionKey
-func NewAesCbcCryptor(blockModeCipher cipher.BlockMode, rng io.Reader, kid string, alg jose.Alg, operations []jose.KeyOps) (BlockModeEncryptionKey, error) {
+// It implements AeadEncryptionKey
+func NewAesCbcCryptor(blockCipher cipher.Block, rng io.Reader, kid string, alg jose.Alg, operations []jose.KeyOps) BlockEncryptionKey {
 	return &AesCbcCryptor{
 		kid:  kid,
 		alg:  alg,
 		rng:  rng,
 		opts: operations,
-		blockMode: blockModeCipher,
-	}, nil
+		blockCipher: blockCipher,
+	}
 }
 
 // GenerateIV generates an IV of the correct size for use with BlockMode encryption/decryption from a random source.
@@ -69,6 +70,7 @@ func (cryptor *AesCbcCryptor) Algorithm() jose.Alg {
 
 func (cryptor *AesCbcCryptor) Seal(operation jose.KeyOps, iv, plaintext []byte) (ciphertext []byte, err error) {
 	ciphertext = make([]byte, len(plaintext))
+	cryptor.blockCipher.Encrypt()
 	cryptor.blockMode.CryptBlocks(ciphertext, plaintext)
 	return
 }

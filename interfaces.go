@@ -109,8 +109,8 @@ type AsymmetricDecryptionKey interface {
 	Encryptor() (AsymmetricEncryptionKey, error)
 }
 
-// AuthenticatedEncryptionKey implements authenticated encryption and decryption.
-type AuthenticatedEncryptionKey interface {
+// AeadEncryptionKey implements authenticated encryption and decryption.
+type AeadEncryptionKey interface {
 	Key
 	Algorithmed
 	// GenerateNonce generates a nonce of the correct size for use in Sealinging operations.
@@ -121,8 +121,8 @@ type AuthenticatedEncryptionKey interface {
 	Open(operation jose.KeyOps, nonce, ciphertext, aad, tag []byte) (plaintext []byte, err error)
 }
 
-// BlockModeEncryptionKey implements encryption and decryption operations with block modes and symmetric keys
-type BlockModeEncryptionKey interface {
+// BlockEncryptionKey implements encryption and decryption operations with block modes and symmetric keys
+type BlockEncryptionKey interface {
 	Key
 	Algorithmed
 	// GenerateIV generates an IV of the correct size for use in blocked operations.

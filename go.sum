@@ -1,5 +1,9 @@
 github.com/IceManGreen/crypto11 v0.0.0-20240119173000-a4fba7ebca9f h1:dJj9dsDI/RETddt9z6pD2OMia+SwLTx2vmDi+oxoz4c=
 github.com/IceManGreen/crypto11 v0.0.0-20240119173000-a4fba7ebca9f/go.mod h1:AO5wFeB9Q4wkXM1zZYHk5Q/JhMczPlpW4tlyirmSR+s=
+github.com/IceManGreen/crypto11 v0.0.0-20240125160436-59e5879cde69 h1:PKEnV9ynM4v5+pAGUwMXTKzMQ8SRY/ZmeIYqfmj5m6I=
+github.com/IceManGreen/crypto11 v0.0.0-20240125160436-59e5879cde69/go.mod h1:AO5wFeB9Q4wkXM1zZYHk5Q/JhMczPlpW4tlyirmSR+s=
+github.com/IceManGreen/crypto11 v0.0.0-20240129105520-bf598b653ff5 h1:7FHUfMcv6uA3QJDsi8E7EG1KGFAfMeg2q2zZ38WOjeA=
+github.com/IceManGreen/crypto11 v0.0.0-20240129105520-bf598b653ff5/go.mod h1:AO5wFeB9Q4wkXM1zZYHk5Q/JhMczPlpW4tlyirmSR+s=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

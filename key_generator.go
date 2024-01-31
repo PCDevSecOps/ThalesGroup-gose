@@ -118,7 +118,7 @@ func (g *ECDSASigningKeyGenerator) Generate(alg jose.Alg, operations []jose.KeyO
 type AuthenticatedEncryptionKeyGenerator struct{}
 
 // Generate generate a Generate and JWK representation.
-func (g *AuthenticatedEncryptionKeyGenerator) Generate(alg jose.Alg, operations []jose.KeyOps) (AuthenticatedEncryptionKey, jose.Jwk, error) {
+func (g *AuthenticatedEncryptionKeyGenerator) Generate(alg jose.Alg, operations []jose.KeyOps) (AeadEncryptionKey, jose.Jwk, error) {
 	sz, ok := authenticatedEncryptionAlgs[alg]
 	if !ok {
 		return nil, nil, ErrInvalidAlgorithm
