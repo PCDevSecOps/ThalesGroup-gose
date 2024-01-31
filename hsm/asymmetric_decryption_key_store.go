@@ -1,8 +1,8 @@
 package hsm
 
 import (
-	"github.com/IceManGreen/crypto11"
-	"github.com/IceManGreen/gose"
+	"github.com/ThalesGroup/crypto11"
+	"github.com/ThalesGroup/gose"
 )
 
 // AsymmetricDecryptionKeyStore implements the AsymmetricDecryptionKeyStore interface providing key lookup

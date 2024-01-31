@@ -26,7 +26,7 @@ import (
 	"crypto/rand"
 	"io"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 var validEncryptionOpts = []jose.KeyOps{jose.KeyOpsEncrypt}

@@ -28,7 +28,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 //TrustKeyStoreImpl implements the Trust Store API

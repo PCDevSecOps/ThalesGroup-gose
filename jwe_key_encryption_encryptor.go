@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 // JweRsaKeyEncryptionEncryptorImpl implements RSA Key Encryption CEK mode.

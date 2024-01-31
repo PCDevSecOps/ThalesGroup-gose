@@ -28,7 +28,7 @@ import (
 	"encoding/pem"
 	"math/big"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 	"github.com/sirupsen/logrus"
 )
 

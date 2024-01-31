@@ -25,7 +25,7 @@ import (
 	"crypto/x509"
 	"math"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 var (

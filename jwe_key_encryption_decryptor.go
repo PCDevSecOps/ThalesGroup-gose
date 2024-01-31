@@ -3,7 +3,7 @@ package gose
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 // JweRsaKeyEncryptionDecryptorImpl implements RSA Key Encryption CEK mode.

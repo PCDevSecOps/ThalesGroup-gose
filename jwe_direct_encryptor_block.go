@@ -22,7 +22,7 @@
 package gose
 
 import (
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 var (
@@ -94,7 +94,7 @@ func (encryptor *JweDirectEncryptorBlock) Encrypt(plaintext, aad []byte) (string
 	if jwe.Ciphertext, err = encryptor.key.Seal(jose.KeyOpsEncrypt, jwe.Iv, jwe.Plaintext); err != nil {
 		return "", err
 	}
-	if encryptor.externalIV {
+	if encryptor.iv != nil {
 		/*
 			If using an externally-generated IV this will have been returned in the tag field
 			So we trim the tag field and update the IV field

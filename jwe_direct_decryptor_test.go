@@ -27,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

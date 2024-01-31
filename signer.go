@@ -30,7 +30,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 	"github.com/sirupsen/logrus"
 )
 

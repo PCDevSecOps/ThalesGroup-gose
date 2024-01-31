@@ -25,7 +25,7 @@ import (
 	"crypto/cipher"
 	"io"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 // AesCbcCryptor provides AES CBC encryption and decryption functions.

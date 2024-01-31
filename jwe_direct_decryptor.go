@@ -21,7 +21,7 @@
 
 package gose
 
-import "github.com/IceManGreen/gose/jose"
+import "github.com/ThalesGroup/gose/jose"
 
 var _ JweDecryptor = (*JweDirectDecryptorImpl)(nil)
 

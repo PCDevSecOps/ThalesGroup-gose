@@ -42,7 +42,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 const (

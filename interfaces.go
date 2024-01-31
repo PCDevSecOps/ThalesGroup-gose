@@ -26,7 +26,7 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 //InvalidFormat is an interface for handling invalid format errors

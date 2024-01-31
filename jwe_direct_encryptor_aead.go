@@ -22,7 +22,7 @@
 package gose
 
 import (
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 var (

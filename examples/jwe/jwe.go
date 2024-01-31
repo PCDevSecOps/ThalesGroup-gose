@@ -23,8 +23,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/IceManGreen/gose"
-	"github.com/IceManGreen/gose/jose"
+	"github.com/ThalesGroup/gose"
+	"github.com/ThalesGroup/gose/jose"
 	"os"
 )
 
