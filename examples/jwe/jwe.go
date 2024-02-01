@@ -72,7 +72,7 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	decryptor := gose.NewJweDirectDecryptorImpl([]gose.AeadEncryptionKey{key})
+	decryptor := gose.NewJweDirectDecryptorAeadImpl([]gose.AeadEncryptionKey{key})
 
 	// Decrypt a JWE blob verifying it's authenticity in the process.
 	plaintext, aad, err := decryptor.Decrypt(jwe)

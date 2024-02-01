@@ -36,17 +36,19 @@ type AesCbcCryptor struct {
 	blockCipher cipher.Block
 	opts []jose.KeyOps
 	rng  io.Reader
+	padding bool
 }
 
 // NewAesCbcCryptor create a new instance of an AesCbcCryptor from the supplied parameters.
 // It implements AeadEncryptionKey
-func NewAesCbcCryptor(blockCipher cipher.Block, rng io.Reader, kid string, alg jose.Alg, operations []jose.KeyOps) BlockEncryptionKey {
+func NewAesCbcCryptor(blockCipher cipher.Block, rng io.Reader, kid string, alg jose.Alg, padding bool, operations []jose.KeyOps) BlockEncryptionKey {
 	return &AesCbcCryptor{
 		kid:  kid,
 		alg:  alg,
 		rng:  rng,
 		opts: operations,
 		blockCipher: blockCipher,
+		padding: padding,
 	}
 }
 
@@ -68,14 +70,26 @@ func (cryptor *AesCbcCryptor) Algorithm() jose.Alg {
 	return cryptor.alg
 }
 
-func (cryptor *AesCbcCryptor) Seal(operation jose.KeyOps, iv, plaintext []byte) (ciphertext []byte, err error) {
-	ciphertext = make([]byte, len(plaintext))
-	cryptor.blockCipher.Encrypt()
-	cryptor.blockMode.CryptBlocks(ciphertext, plaintext)
-	return
+func getCipherTextLength(plaintextLength int, blockSize int) int {
+	var finalSize int
+	if multiplier := plaintextLength / blockSize; multiplier > 0 {
+		finalSize = multiplier*blockSize
+		if remain := plaintextLength % blockSize; remain > 0 {
+			finalSize = finalSize + blockSize
+		}
+	} else {
+		finalSize = blockSize
+	}
+	return finalSize
 }
 
-func (cryptor *AesCbcCryptor) Open(operation jose.KeyOps, iv, ciphertext []byte) (plaintext []byte, err error) {
+func (cryptor *AesCbcCryptor) Seal(plaintext []byte) []byte {
+	ciphertext := make([]byte, getCipherTextLength(len(plaintext), cryptor.blockCipher.BlockSize()))
+	cryptor.blockCipher.Encrypt(ciphertext, plaintext)
+	return ciphertext
+}
+
+func (cryptor *AesCbcCryptor) Open(ciphertext []byte) (plaintext []byte, err error) {
 	//TODO implement me
 	panic("implement me")
 }

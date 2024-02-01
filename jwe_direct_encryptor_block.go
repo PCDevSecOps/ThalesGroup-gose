@@ -22,6 +22,7 @@
 package gose
 
 import (
+	"fmt"
 	"github.com/ThalesGroup/gose/jose"
 )
 
@@ -32,11 +33,12 @@ var (
 )
 
 // JweDirectEncryptorBlock
-// implementation of JweDirectEncryptionEncryptor interface for BlockMode
-// BlockMode is more efficient than Block for bulk operations
+// implementation of JweDirectEncryptionEncryptor interface for BlockMode which is more efficient than Block for bulk
+// operations
 type JweDirectEncryptorBlock struct {
-	key BlockEncryptionKey
-	iv  []byte
+	aesKey  BlockEncryptionKey
+	hmacKey HmacKey
+	iv      []byte
 }
 
 // getEncryptorBlockIV generates a new iv if the encryptor's one is empty
@@ -45,7 +47,7 @@ func (encryptor *JweDirectEncryptorBlock) getEncryptorBlockIV() ([]byte, error) 
 	var iv []byte
 	var err error
 	if encryptor.iv == nil {
-		iv, err = encryptor.key.GenerateIV()
+		iv, err = encryptor.aesKey.GenerateIV()
 		if err != nil {
 			return nil, err
 		}
@@ -56,63 +58,78 @@ func (encryptor *JweDirectEncryptorBlock) getEncryptorBlockIV() ([]byte, error) 
 }
 
 // makeJwe builds the JWE structure
-func (encryptor *JweDirectEncryptorBlock) makeJwe(customHeaderFields jose.JweCustomHeaderFields, plaintext, iv []byte) *jose.Jwe {
-	return &jose.Jwe{
-		Header: jose.JweHeader{
-			JwsHeader: jose.JwsHeader{
-				Alg: jose.AlgDir,
-				Kid: encryptor.key.Kid(),
-			},
-			Enc:                   cbcAlgToEncMap[encryptor.key.Algorithm()],
-			JweCustomHeaderFields: customHeaderFields,
+func (encryptor *JweDirectEncryptorBlock) makeJweProtectedHeader() *jose.JweProtectedHeader {
+	return &jose.JweProtectedHeader{
+		JwsHeader: jose.JwsHeader{
+			Alg: encryptor.aesKey.Algorithm(),
+			Kid: encryptor.aesKey.Kid(),
+			Typ: "JWT",
+			Cty: "JWT",
 		},
-		EncryptedKey: []byte{},
-		Iv:           iv,
-		Plaintext:    plaintext,
+		Enc: gcmAlgToEncMap[encryptor.aesKey.Algorithm()],
 	}
 }
 
-// Encrypt encrypts the given plaintext and AAD returning a compact JWE.
+// Encrypt encrypts the given plaintext and returns a compact JWE.
+// aad is useless here : according to RFC7516, the AAD is computed from the JWE's private header
 func (encryptor *JweDirectEncryptorBlock) Encrypt(plaintext, aad []byte) (string, error) {
-	// aad, if any
-	var blob *jose.Blob
-	var customHeaderFields jose.JweCustomHeaderFields
-	if len(aad) > 0 {
-		blob = &jose.Blob{B: aad}
-		customHeaderFields = jose.JweCustomHeaderFields{
-			OtherAad: blob,
-		}
-	}
+	// The following steps respect the RFC7516 Appendix B for AES CBC and HMAC encryption instructions :
+	// https://datatracker.ietf.org/doc/html/rfc7516#appendix-B
+	var err error
 	// iv
-	iv, err := encryptor.getEncryptorBlockIV()
-	// jwe
-	jwe := encryptor.makeJwe(customHeaderFields, plaintext, iv)
-	if err = jwe.MarshalHeader(); err != nil {
-		return "", err
+	var iv []byte
+	if iv, err = encryptor.getEncryptorBlockIV(); err != nil {
+		return "", fmt.Errorf("error getting the IV: %v", err)
 	}
-	// encrypt
-	if jwe.Ciphertext, err = encryptor.key.Seal(jose.KeyOpsEncrypt, jwe.Iv, jwe.Plaintext); err != nil {
-		return "", err
+	// JWE header
+	jweProtectedHeader := encryptor.makeJweProtectedHeader()
+	// AAD
+	//  = ASCII(BASE64URL(UTF8(JWE Protected Header)))
+	if aad, err = jweProtectedHeader.MarshalProtectedHeader(); err != nil {
+		return "", fmt.Errorf("error marshalling the JWE Header: %v", err)
 	}
-	if encryptor.iv != nil {
-		/*
-			If using an externally-generated IV this will have been returned in the tag field
-			So we trim the tag field and update the IV field
-		*/
-		var throwawayNonceToGetLength []byte
-		if throwawayNonceToGetLength, err = encryptor.key.GenerateIV(); nil != err {
-			return "", err
-		}
-		jwe.Iv = jwe.Tag[len(jwe.Tag)-len(throwawayNonceToGetLength):]
-		jwe.Tag = jwe.Tag[:len(jwe.Tag)-len(throwawayNonceToGetLength)]
+	// AL = AAD length
+	//  is the octet string representing the number of bits in AAD expressed as a big-endian 64-bit unsigned integer
+	al := intToBytesBigEndian(len(aad))
+	// Encrypt Plaintext to Create Ciphertext
+	ciphertext := encryptor.aesKey.Seal(plaintext)
+	// Input HMAC computation
+	// Concatenate the AAD, the Initialization Vector, the ciphertext and the AL value.
+	inputHmac := concatByteArrays([][]byte{aad, iv, ciphertext, al})
+	// compute the hash of it
+	outputHmac := encryptor.hmacKey.Hash(inputHmac)
+	// Create Authentication Tag
+	//  = the first half of the hash
+	// THE TAG HAS TO BE VERIFIED WHEN THIS SAME JWE IS USED FOR DECRYPTION.
+	tag := outputHmac[:(len(outputHmac) / 2)]
+
+	// TODO : according to this draft : https://datatracker.ietf.org/doc/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-01#section-2.1
+	//  The returned ciphertext should be the encrypted plaintext concatenated with the tag
+	//  we should check if this syntax is supported for JWE consumers
+
+	// Create the JWE
+	joseHeader := &jose.HeaderRfc7516{
+		JweProtectedHeader:               *jweProtectedHeader,
+		JweSharedUnprotectedHeader:       jose.JweSharedUnprotectedHeader{},
+		JwePerRecipientUnprotectedHeader: jose.JwePerRecipientUnprotectedHeader{
+			PlaintextLength: len(plaintext),
+		},
 	}
-	return jwe.Marshal(), nil
+	jwe := &jose.JweRfc7516{
+		Header:               *joseHeader,
+		InitializationVector: iv,
+		AAD:                  aad,
+		Ciphertext:           ciphertext,
+		AuthenticationTag:    tag,
+	}
+	return jwe.Marshal()
 }
 
 // NewJweDirectEncryptorBlock construct an instance of a JweDirectEncryptorBlock.
-func NewJweDirectEncryptorBlock(key BlockEncryptionKey, iv []byte) *JweDirectEncryptorBlock {
+func NewJweDirectEncryptorBlock(aesKey BlockEncryptionKey, hmacKey HmacKey, iv []byte) *JweDirectEncryptorBlock {
 	return &JweDirectEncryptorBlock{
-		key: key,
-		iv:  iv,
+		aesKey:  aesKey,
+		hmacKey: hmacKey,
+		iv:      iv,
 	}
 }

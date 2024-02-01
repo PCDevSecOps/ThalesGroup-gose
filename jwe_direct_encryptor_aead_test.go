@@ -117,7 +117,7 @@ func TestExampleJweDirectEncryptionEncryptorImpl_EncryptDecrypt(t *testing.T) {
 	log.Printf("Created JWE: %s", jwe)
 
 	// Now to decrypt
-	jweDecryptor := NewJweDirectDecryptorImpl([]AeadEncryptionKey{cryptor})
+	jweDecryptor := NewJweDirectDecryptorAeadImpl([]AeadEncryptionKey{cryptor})
 
 	recoveredPlaintext, recoveredAad, err := jweDecryptor.Decrypt(jwe)
 	if err != nil {

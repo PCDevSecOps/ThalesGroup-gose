@@ -23,15 +23,26 @@ package gose
 
 import "github.com/ThalesGroup/gose/jose"
 
-var _ JweDecryptor = (*JweDirectDecryptorImpl)(nil)
+var _ JweDecryptor = (*JweDirectDecryptorBlockImpl)(nil)
 
-// JweDirectDecryptorImpl is a concrete implementation of the JweDirectDecryptor interface.
-type JweDirectDecryptorImpl struct {
-	keystore map[string]AeadEncryptionKey
+// JweDirectDecryptorAeadImpl is a concrete implementation of the JweDirectDecryptor interface.
+type JweDirectDecryptorBlockImpl struct {
+	keystore map[string]BlockEncryptionKey
 }
 
 // Decrypt and verify the given JWE returning both the plaintext and AAD.
-func (decryptor *JweDirectDecryptorImpl) Decrypt(jwe string) (plaintext, aad []byte, err error) {
+func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(jwe string) (plaintext, aad []byte, err error) {
+	// The following steps respect the RFC7516 decryption instructions :
+	// https://datatracker.ietf.org/doc/html/rfc7516
+	// The message decryption process is the reverse of the encryption
+	//   process.  The order of the steps is not significant in cases where
+	//   there are no dependencies between the inputs and outputs of the
+	//   steps.  If any of these steps fail, the encrypted content cannot be
+	//   validated.
+
+
+
+
 
 	var jweStruct jose.Jwe
 	if err = jweStruct.Unmarshal(jwe); err != nil {
@@ -80,10 +91,10 @@ func (decryptor *JweDirectDecryptorImpl) Decrypt(jwe string) (plaintext, aad []b
 	return
 }
 
-// NewJweDirectDecryptorImpl create a new instance of a JweDirectDecryptorImpl.
-func NewJweDirectDecryptorImpl(keys []AeadEncryptionKey) *JweDirectDecryptorImpl {
+// NewJweDirectDecryptorAeadImpl create a new instance of a JweDirectDecryptorAeadImpl.
+func NewJweDirectDecryptorImpl(keys []AeadEncryptionKey) *JweDirectDecryptorBlockImpl {
 	// Create map out of our list of keys. The map is keyed in Kid.
-	decryptor := &JweDirectDecryptorImpl{
+	decryptor := &JweDirectDecryptorBlockImpl{
 		keystore: map[string]AeadEncryptionKey{},
 	}
 	for _, key := range keys {

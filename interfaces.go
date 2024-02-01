@@ -127,10 +127,17 @@ type BlockEncryptionKey interface {
 	Algorithmed
 	// GenerateIV generates an IV of the correct size for use in blocked operations.
 	GenerateIV() ([]byte, error)
-	// Seal the given plaintext returning ciphertext and authentication tag.
-	Seal(operation jose.KeyOps, iv, plaintext []byte) (ciphertext []byte, err error)
-	// Open and validate the given ciphertext and tag returning the plaintext.
-	Open(operation jose.KeyOps, iv, ciphertext []byte) (plaintext []byte, err error)
+	// Seal the given plaintext returning ciphertext and TODO : like the size of the plaintext ?.
+	Seal(plaintext []byte) []byte
+	// Open and validate the given ciphertext and TODO : like what ?.
+	Open(ciphertext []byte) (plaintext []byte, err error)
+}
+
+type HmacKey interface {
+	Key
+	Algorithmed
+	// Hash method gets bytes as input and sum it all to return a hashed result in bytes
+	Hash(input []byte) []byte
 }
 
 // JwtSigner implements generation of signed compact JWTs as defined by https://tools.ietf.org/html/rfc7519.

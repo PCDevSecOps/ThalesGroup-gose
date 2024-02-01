@@ -52,6 +52,19 @@ type Enc string
 // Zip is a type representing values destined for the `zip` field in a JWE header.
 type Zip string
 
+type Header struct {
+	Alg Alg    `json:"alg"`
+	Jku string `json:"jku,omitempty"`
+	//jwkFields []jwkFields `json:"jwk,omitempty"`  TODO finish this
+	Kid    string   `json:"kid,omitempty"`
+	X5U    string   `json:"x5u,omitempty"`
+	X5C    [][]byte `json:"x5c,omitempty"`
+	X5T    *Blob    `json:"x5t,omitempty"`
+	X5T256 *Blob    `json:"x5t#S256,omitempty"`
+	Typ    JwsType  `json:"typ,omitempty"`
+	Cty    JwsType  `json:"cty,omitempty"`
+}
+
 const (
 	// Supported Algorithms
 

@@ -1,5 +1,7 @@
-github.com/ThalesGroup/crypto11 v1.2.6-0.20240131093942-9d854fa91bf2 h1:8aLnMSJWyk+8y+c7YoBNtw1B1zIaImnZflwe5iuQvtg=
-github.com/ThalesGroup/crypto11 v1.2.6-0.20240131093942-9d854fa91bf2/go.mod h1:vIMcXTmUaKO/mH7xd6etBQHMiFr2jCSVwXYccZIfpjE=
+github.com/ThalesGroup/crypto11 v1.2.6-0.20240131102014-e77104e36931 h1:OuLk+vaycWTjMF13wn6yXOWlCUpCw3ceOVgxhNbGCFM=
+github.com/ThalesGroup/crypto11 v1.2.6-0.20240131102014-e77104e36931/go.mod h1:vIMcXTmUaKO/mH7xd6etBQHMiFr2jCSVwXYccZIfpjE=
+github.com/ThalesGroup/crypto11 v1.2.6-0.20240201074802-edb14b6d8052 h1:TQvjd6WTZTRI2ToCbIsfxGOwOc2cdUEhIkKOYmjnxNQ=
+github.com/ThalesGroup/crypto11 v1.2.6-0.20240201074802-edb14b6d8052/go.mod h1:vIMcXTmUaKO/mH7xd6etBQHMiFr2jCSVwXYccZIfpjE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
