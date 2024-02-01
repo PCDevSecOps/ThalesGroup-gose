@@ -66,7 +66,7 @@ func (encryptor *JweDirectEncryptorBlock) makeJweProtectedHeader() *jose.JweProt
 			Typ: "JWT",
 			Cty: "JWT",
 		},
-		Enc: gcmAlgToEncMap[encryptor.aesKey.Algorithm()],
+		Enc: cbcAlgToEncMap[encryptor.aesKey.Algorithm()],
 	}
 }
 
