@@ -378,7 +378,7 @@ func base64EncodeUInt32(val uint32) string {
 	return base64.RawURLEncoding.EncodeToString(buf.Bytes())
 }
 
-func intToBytesBigEndian(val int) []byte {
+func uintToBytesBigEndian(val uint64) []byte {
 	var buf bytes.Buffer
 	if err := binary.Write(&buf, binary.BigEndian, &val); err != nil {
 		log.Panicf("%s", err)

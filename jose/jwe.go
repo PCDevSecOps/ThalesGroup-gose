@@ -34,6 +34,15 @@ type JweCustomHeaderFields struct {
 	OtherAad *Blob `json:"_thales_aad,omitempty"`
 }
 
+// JweHeader JWE header fields.
+// DEPRECATED
+type JweHeader struct {
+	JwsHeader
+	JweCustomHeaderFields
+	Enc Enc `json:"enc"`
+	Zip Zip `json:"zip,omitempty"`
+}
+
 // JwePerRecipientUnprotectedHeader
 //
 //	JSON object that contains Header Parameters that apply to a single
@@ -59,6 +68,7 @@ type JweSharedUnprotectedHeader struct{}
 //	Header.
 type JweProtectedHeader struct {
 	JwsHeader
+	JweCustomHeaderFields
 	Enc Enc `json:"enc"`
 	Zip Zip `json:"zip,omitempty"`
 }
@@ -74,24 +84,21 @@ type HeaderRfc7516 struct {
 	JwePerRecipientUnprotectedHeader
 }
 
-// JweHeader JWE header fields.
-// Beware : this JweHeader implementation does not respect rfc 7516. Use JOSEHeader instead.
-// DEPRECATED
-type JweHeader struct {
-	// https://datatracker.ietf.org/doc/html/rfc7516
-	JwsHeader
-	JweCustomHeaderFields
-	Enc Enc `json:"enc"`
-	Zip Zip `json:"zip,omitempty"`
+type JweRfc7516Compact struct {
+	ProtectedHeader JweProtectedHeader
+	EncryptedKey []byte
+	InitializationVector []byte
+	Ciphertext []byte
+	AuthenticationTag []byte
 }
 
 type JweRfc7516 struct {
 	Header HeaderRfc7516
 	EncryptedKey []byte
 	InitializationVector []byte
-	AAD []byte
 	Ciphertext []byte
 	AuthenticationTag []byte
+	AAD []byte
 }
 
 // Jwe representation of a JWE.
@@ -103,8 +110,8 @@ type Jwe struct {
 	EncryptedKey     []byte
 	Iv               []byte
 	Ciphertext       []byte
-	Plaintext []byte
 	Tag       []byte
+	Plaintext []byte
 }
 
 // MarshalHeader marshal JWE header. Note this is not guaranteed to result in the same marshaled representation across
@@ -164,6 +171,7 @@ func (jweHeader *HeaderRfc7516) MarshallHeader() (marshalledHeader []byte, err e
 }
 
 // Unmarshal to body string, or error
+// DEPRECATED : does not match the proper JWE structure as defined in rfc 7516
 func (jwe *Jwe) Unmarshal(src string) (err error) {
 	/* Compact JWS encoding. */
 	parts := strings.Split(src, ".")
@@ -196,6 +204,48 @@ func (jwe *Jwe) Unmarshal(src string) (err error) {
 	return
 }
 
+func (jwe JweRfc7516Compact) Unmarshal(src string) (err error) {
+	// Compact JWE are divided in 5 parts :
+	//   o  Protected Header
+	//   o  Encrypted Key
+	//   o  Initialization Vector
+	//   o  Ciphertext
+	//   o  Authentication Tag
+	parts := strings.Split(src, ".")
+	if len(parts) != 5 {
+		err = ErrJweFormat
+		return
+	}
+	// Unmarshall JWE Protected Header
+	var marshalledHeader []byte
+	if marshalledHeader, err = base64.RawURLEncoding.DecodeString(parts[0]); err != nil {
+		return
+	}
+	if err = json.Unmarshal(marshalledHeader, &jwe.ProtectedHeader); err != nil {
+		return
+	}
+	// JWE Encrypted Key
+	//  can be a zero length key in scenarios such as direct encoding.
+	if len(parts[1]) > 0 {
+		if jwe.EncryptedKey, err = base64.RawURLEncoding.DecodeString(parts[1]); err != nil {
+			return
+		}
+	}
+	// JWE Initialization Vector
+	if jwe.InitializationVector, err = base64.RawURLEncoding.DecodeString(parts[2]); err != nil {
+		return
+	}
+	// JWE Ciphertext
+	if jwe.Ciphertext, err = base64.RawURLEncoding.DecodeString(parts[4]); err != nil {
+		return
+	}
+	// Authentication Tag
+	if jwe.AuthenticationTag, err = base64.RawURLEncoding.DecodeString(parts[5]); err != nil {
+		return
+	}
+	return
+}
+
 // Marshal a JWE to it's compact representation.
 func (jwe *Jwe) Marshal() string {
 	stringz := []string{
@@ -209,9 +259,9 @@ func (jwe *Jwe) Marshal() string {
 }
 
 // Marshal a JWE to it's compact representation.
-func (jwe *JweRfc7516) Marshal() (marshalledJwe string, err error) {
+func (jwe *JweRfc7516Compact) Marshal() (marshalledJwe string, err error) {
 	var marshalledHeader []byte
-	if marshalledHeader, err = jwe.Header.MarshallHeader(); err != nil {
+	if marshalledHeader, err = jwe.ProtectedHeader.MarshalProtectedHeader(); err != nil {
 		return "", fmt.Errorf("error marshalling the JWE header: %v", err)
 	}
 	stringz := []string{

@@ -39,6 +39,7 @@ type JweDirectEncryptorBlock struct {
 	aesKey  BlockEncryptionKey
 	hmacKey HmacKey
 	iv      []byte
+	jweVerifier JweHmacVerifierImpl
 }
 
 // getEncryptorBlockIV generates a new iv if the encryptor's one is empty
@@ -88,37 +89,31 @@ func (encryptor *JweDirectEncryptorBlock) Encrypt(plaintext, aad []byte) (string
 	if aad, err = jweProtectedHeader.MarshalProtectedHeader(); err != nil {
 		return "", fmt.Errorf("error marshalling the JWE Header: %v", err)
 	}
-	// AL = AAD length
-	//  is the octet string representing the number of bits in AAD expressed as a big-endian 64-bit unsigned integer
-	al := intToBytesBigEndian(len(aad))
 	// Encrypt Plaintext to Create Ciphertext
 	ciphertext := encryptor.aesKey.Seal(plaintext)
-	// Input HMAC computation
-	// Concatenate the AAD, the Initialization Vector, the ciphertext and the AL value.
-	inputHmac := concatByteArrays([][]byte{aad, iv, ciphertext, al})
-	// compute the hash of it
-	outputHmac := encryptor.hmacKey.Hash(inputHmac)
+	// HMAC computation
+	outputHmac := encryptor.jweVerifier.ComputeHash(aad, iv, ciphertext)
 	// Create Authentication Tag
 	//  = the first half of the hash
 	// THE TAG HAS TO BE VERIFIED WHEN THIS SAME JWE IS USED FOR DECRYPTION.
-	tag := outputHmac[:(len(outputHmac) / 2)]
+	// BEWARE that taking half of the hash for integrity check is part of the rfc 7516 :
+	// https://datatracker.ietf.org/doc/html/rfc7516#appendix-B.7
+	// I am not sure if we have to follow the specifications or get the max of the length of the hash to maximize the security
+	//tag := outputHmac[:(len(outputHmac) / 2)]
+	tag := outputHmac
 
 	// TODO : according to this draft : https://datatracker.ietf.org/doc/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-01#section-2.1
 	//  The returned ciphertext should be the encrypted plaintext concatenated with the tag
 	//  we should check if this syntax is supported for JWE consumers
 
 	// Create the JWE
-	joseHeader := &jose.HeaderRfc7516{
-		JweProtectedHeader:               *jweProtectedHeader,
-		JweSharedUnprotectedHeader:       jose.JweSharedUnprotectedHeader{},
-		JwePerRecipientUnprotectedHeader: jose.JwePerRecipientUnprotectedHeader{
-			PlaintextLength: len(plaintext),
-		},
-	}
-	jwe := &jose.JweRfc7516{
-		Header:               *joseHeader,
+	// we store the length of the plaintext in the additional data held by the protected header.
+	// It can be used to return the proper plaintext after decryption.
+	jweProtectedHeader.OtherAad = &jose.Blob{B: uintToBytesBigEndian(uint64(len(plaintext)))}
+	jwe := &jose.JweRfc7516Compact{
+		ProtectedHeader:      *jweProtectedHeader,
+		EncryptedKey:         nil,
 		InitializationVector: iv,
-		AAD:                  aad,
 		Ciphertext:           ciphertext,
 		AuthenticationTag:    tag,
 	}
@@ -131,5 +126,6 @@ func NewJweDirectEncryptorBlock(aesKey BlockEncryptionKey, hmacKey HmacKey, iv [
 		aesKey:  aesKey,
 		hmacKey: hmacKey,
 		iv:      iv,
+		jweVerifier: JweHmacVerifierImpl{hmacKey: hmacKey},
 	}
 }

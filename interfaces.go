@@ -176,3 +176,17 @@ type JweEncryptor interface {
 type JweDecryptor interface {
 	Decrypt(jwe string) (plaintext, aad []byte, err error)
 }
+
+type JweHmacVerifier interface {
+	// ComputeHash computes the authentication Tag for of a Jwe by hashing the concatenated values in argument
+	//  aad is the protected header of the JWE encoded in b64
+	//  IV is the initialization vector of the JWE recipient for the encryption/decryption operations
+	//  Ciphertext is the result of the encryption operation using the current IV
+	//  AL is representing the number of bits (length) in AAD expressed as a big-endian 64-bit unsigned integer
+	// Returns the hash result of a hmac operation given the concatenated slice of the values above
+	ComputeHash(aad []byte, iv []byte, ciphertext []byte) []byte
+	// VerifyCompact a compact jwe (rfc 7516) in input and computes its authentication TAG with a hmac operation with
+	// the authentication TAG in the JWE.
+	// Returns false if the integrity check fails, i.e the tags are different
+	VerifyCompact(jwe jose.JweRfc7516Compact,) (result bool, err error)
+}

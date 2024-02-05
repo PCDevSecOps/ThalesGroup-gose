@@ -21,17 +21,19 @@
 
 package gose
 
-import "github.com/ThalesGroup/gose/jose"
+import (
+	"fmt"
+	"github.com/ThalesGroup/gose/jose"
+)
 
-var _ JweDecryptor = (*JweDirectDecryptorBlockImpl)(nil)
-
-// JweDirectDecryptorAeadImpl is a concrete implementation of the JweDirectDecryptor interface.
 type JweDirectDecryptorBlockImpl struct {
-	keystore map[string]BlockEncryptionKey
+	aesKey  BlockEncryptionKey
+	hmacKey HmacKey
+	jweVerifier JweHmacVerifierImpl
 }
 
 // Decrypt and verify the given JWE returning both the plaintext and AAD.
-func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(jwe string) (plaintext, aad []byte, err error) {
+func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(marshalledJwe string) (plaintext []byte, err error) {
 	// The following steps respect the RFC7516 decryption instructions :
 	// https://datatracker.ietf.org/doc/html/rfc7516
 	// The message decryption process is the reverse of the encryption
@@ -39,66 +41,48 @@ func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(jwe string) (plaintext, aa
 	//   there are no dependencies between the inputs and outputs of the
 	//   steps.  If any of these steps fail, the encrypted content cannot be
 	//   validated.
-
-
-
-
-
-	var jweStruct jose.Jwe
-	if err = jweStruct.Unmarshal(jwe); err != nil {
-		return
+	var jwe jose.JweRfc7516Compact
+	// Unmarshall the header
+	if err = jwe.Unmarshal(marshalledJwe); err != nil {
+		return nil, fmt.Errorf("error unmarshalling the jwe: %v", err)
+	}
+	// check the algorithm in header
+	if jwe.ProtectedHeader.Alg != decryptor.aesKey.Algorithm() {
+		return nil, fmt.Errorf("error checking the JWE protected header's algorthim. algorithm is '%v' but expected is '%v'", jwe.ProtectedHeader.Alg, decryptor.aesKey.Algorithm())
+	}
+	// check the keys for direct encryption
+	if jwe.ProtectedHeader.Kid != decryptor.aesKey.Kid() {
+		return nil, fmt.Errorf("error checking the Key ID for decryption. ID is '%v' but expected is '%v'", jwe.ProtectedHeader.Kid, decryptor.aesKey.Kid())
+	}
+	// check that the CEK is empty for direct encryption
+	if len(jwe.EncryptedKey) != 0 {
+		return nil, fmt.Errorf("error checking the encrypted key. Should be empty for empty encryption but was '%d' bytes long", len(jwe.EncryptedKey))
 	}
 
-	// We do not support zip conpression
-	if jweStruct.Header.Zip != "" {
+	// INTEGRITY CHECK before decryption
+	integrity, err := decryptor.jweVerifier.VerifyCompact(jwe);
+	if err != nil {
+		return nil, err
+	}
+	if ! integrity {
+		return nil, fmt.Errorf("error corrupted jwe : integrity check failed")
+	}
+	// decryption
+	if jwe.ProtectedHeader.Zip != "" {
 		err = ErrZipCompressionNotSupported
 		return
 	}
+	return decryptor.aesKey.Open(jwe.Ciphertext)
 
-	// If there's no key ID specified fail.
-	if len(jweStruct.Header.Kid) == 0 {
-		err = ErrInvalidKid
-		return
-	}
-
-	var key AeadEncryptionKey
-	var exists bool
-	if key, exists = decryptor.keystore[jweStruct.Header.Kid]; !exists {
-		err = ErrUnknownKey
-		return
-	}
-
-	enc, ok := gcmAlgToEncMap[key.Algorithm()]
-	if !ok {
-		err = ErrInvalidEncryption
-		return
-	}
-
-	// Check alg is as expected, it's a direct encryption.
-	if jweStruct.Header.Alg != jose.AlgDir || jweStruct.Header.Enc != enc {
-		err = ErrInvalidAlgorithm
-		return
-	}
-
-	if plaintext, err = key.Open(jose.KeyOpsDecrypt, jweStruct.Iv, jweStruct.Ciphertext, jweStruct.MarshalledHeader, jweStruct.Tag); err != nil {
-		return
-	}
-
-	if jweStruct.Header.OtherAad != nil {
-		aad = jweStruct.Header.OtherAad.Bytes()
-	}
-
-	return
 }
 
-// NewJweDirectDecryptorAeadImpl create a new instance of a JweDirectDecryptorAeadImpl.
-func NewJweDirectDecryptorImpl(keys []AeadEncryptionKey) *JweDirectDecryptorBlockImpl {
+// NewJweDirectDecryptorImpl create a new instance of a JweDirectDecryptorBlockImpl.
+func NewJweDirectDecryptorImpl(aesKey BlockEncryptionKey, hmacKey HmacKey) *JweDirectDecryptorBlockImpl {
 	// Create map out of our list of keys. The map is keyed in Kid.
 	decryptor := &JweDirectDecryptorBlockImpl{
-		keystore: map[string]AeadEncryptionKey{},
-	}
-	for _, key := range keys {
-		decryptor.keystore[key.Kid()] = key
+		aesKey:  aesKey,
+		hmacKey: hmacKey,
+		jweVerifier: JweHmacVerifierImpl{hmacKey: hmacKey},
 	}
 	return decryptor
 }
