@@ -32,7 +32,7 @@ type JweDirectDecryptorBlockImpl struct {
 	jweVerifier JweHmacVerifierImpl
 }
 
-// Decrypt and verify the given JWE returning both the plaintext and AAD.
+// Decrypt and verify the given JWE returning the plaintext.
 func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(marshalledJwe string) (plaintext []byte, err error) {
 	// The following steps respect the RFC7516 decryption instructions :
 	// https://datatracker.ietf.org/doc/html/rfc7516
@@ -72,7 +72,7 @@ func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(marshalledJwe string) (pla
 		err = ErrZipCompressionNotSupported
 		return
 	}
-	return decryptor.aesKey.Open(jwe.Ciphertext)
+	return decryptor.aesKey.Open(jwe.Ciphertext), nil
 
 }
 

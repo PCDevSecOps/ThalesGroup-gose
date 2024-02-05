@@ -34,28 +34,25 @@ type AesCbcCryptor struct {
 	kid  string
 	alg  jose.Alg
 	blockCipher cipher.Block
-	opts []jose.KeyOps
 	rng  io.Reader
 	padding bool
 }
 
 // NewAesCbcCryptor create a new instance of an AesCbcCryptor from the supplied parameters.
 // It implements AeadEncryptionKey
-func NewAesCbcCryptor(blockCipher cipher.Block, rng io.Reader, kid string, alg jose.Alg, padding bool, operations []jose.KeyOps) BlockEncryptionKey {
+func NewAesCbcCryptor(blockCipher cipher.Block, rng io.Reader, kid string, alg jose.Alg, padding bool) BlockEncryptionKey {
 	return &AesCbcCryptor{
 		kid:  kid,
 		alg:  alg,
 		rng:  rng,
-		opts: operations,
 		blockCipher: blockCipher,
 		padding: padding,
 	}
 }
 
-// GenerateIV generates an IV of the correct size for use with BlockMode encryption/decryption from a random source.
+// GenerateIV generates an IV of the correct size
 func (cryptor *AesCbcCryptor) GenerateIV() ([]byte, error) {
-	// for CBC, IV size is 16 bytes
-	iv := make([]byte, 16)
+	iv := make([]byte, cryptor.blockCipher.BlockSize())
 	if _, err := cryptor.rng.Read(iv); err != nil {
 		return nil, err
 	}
@@ -70,11 +67,11 @@ func (cryptor *AesCbcCryptor) Algorithm() jose.Alg {
 	return cryptor.alg
 }
 
-func getCipherTextLength(plaintextLength int, blockSize int) int {
+func getDestinationTextLength(inputLength int, blockSize int) int {
 	var finalSize int
-	if multiplier := plaintextLength / blockSize; multiplier > 0 {
+	if multiplier := inputLength / blockSize; multiplier > 0 {
 		finalSize = multiplier*blockSize
-		if remain := plaintextLength % blockSize; remain > 0 {
+		if remain := inputLength % blockSize; remain > 0 {
 			finalSize = finalSize + blockSize
 		}
 	} else {
@@ -84,14 +81,15 @@ func getCipherTextLength(plaintextLength int, blockSize int) int {
 }
 
 func (cryptor *AesCbcCryptor) Seal(plaintext []byte) []byte {
-	ciphertext := make([]byte, getCipherTextLength(len(plaintext), cryptor.blockCipher.BlockSize()))
+	ciphertext := make([]byte, getDestinationTextLength(len(plaintext), cryptor.blockCipher.BlockSize()))
 	cryptor.blockCipher.Encrypt(ciphertext, plaintext)
 	return ciphertext
 }
 
-func (cryptor *AesCbcCryptor) Open(ciphertext []byte) (plaintext []byte, err error) {
-	//TODO implement me
-	panic("implement me")
+func (cryptor *AesCbcCryptor) Open(ciphertext []byte) (plaintext []byte) {
+	plaintext = make([]byte, getDestinationTextLength(len(plaintext), cryptor.blockCipher.BlockSize()))
+	cryptor.blockCipher.Decrypt(plaintext, ciphertext)
+	return plaintext
 }
 
 

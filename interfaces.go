@@ -127,10 +127,10 @@ type BlockEncryptionKey interface {
 	Algorithmed
 	// GenerateIV generates an IV of the correct size for use in blocked operations.
 	GenerateIV() ([]byte, error)
-	// Seal the given plaintext returning ciphertext and TODO : like the size of the plaintext ?.
+	// Seal the given plaintext returning ciphertext
 	Seal(plaintext []byte) []byte
-	// Open and validate the given ciphertext and TODO : like what ?.
-	Open(ciphertext []byte) (plaintext []byte, err error)
+	// Open and validate the given ciphertext
+	Open(ciphertext []byte) []byte
 }
 
 type HmacKey interface {

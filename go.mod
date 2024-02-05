@@ -1,7 +1,7 @@
 module github.com/ThalesGroup/gose
 
 require (
-	github.com/ThalesGroup/crypto11 v1.2.6-0.20240201074802-edb14b6d8052
+	github.com/ThalesGroup/crypto11 v1.2.6-0.20240201094022-08cc16d8590d
 	github.com/google/uuid v1.5.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.7.0
