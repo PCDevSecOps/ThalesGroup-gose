@@ -30,31 +30,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockBlock struct {
-	blockSize int
-}
 
-
-func NewMockBlock(blockSize int) cipher.Block {
-	return &mockBlock{
-		blockSize: blockSize,
-	}
-}
-
-func (mb *mockBlock) BlockSize() int {
-	return mb.blockSize
-}
-
-func (mb *mockBlock) Encrypt(dst, src []byte) {
-	res := "expectedciphertext"
-	copy(dst[:len(res)], res)
-}
-
-func (mb *mockBlock) Decrypt(dst, src []byte){
-	res := "expectedcleartext"
-	copy(dst[:len(res)], res)
-}
-
+var (
+	expectedCiphertext = "expectedciphertext"
+	expectedCleartext = "expectedcleartext"
+)
 
 func TestAesCbcCryptor(t *testing.T) {
 	var err error
@@ -69,64 +49,60 @@ func TestAesCbcCryptor(t *testing.T) {
 	_, err = rng.Read(iv)
 	require.NoError(t, err)
 	// init key and cryptor
-	mockKey := NewMockBlock(blockSize)
+	mockKey := NewMockBlock(blockSize, expectedCleartext, expectedCiphertext)
 	cryptor := NewAesCbcCryptor(mockKey, rng, kid, alg, true)
 	require.NoError(t, err)
 	require.NotNil(t, cryptor)
 
-	plaintext := "encrypt me"
-	ciphertext := ""
-	t.Run("GenerateIV", func(t *testing.T) {
-		testGenerateIV(t, cryptor, mockKey)
+	t.Run("testGenerateAESCBCIV", func(t *testing.T) {
+		testGenerateAESCBCIV(t, cryptor, mockKey)
 	})
-	t.Run("TestKid", func(t *testing.T) {
-		testKid(t, cryptor, kid)
+	t.Run("testAESCBCKid", func(t *testing.T) {
+		testAESCBCKid(t, cryptor, kid)
 	})
-	t.Run("TestAlgorithm", func(t *testing.T) {
-		testAlgorithm(t, cryptor, alg)
+	t.Run("testAESCBCAlgorithm", func(t *testing.T) {
+		testAESCBCAlgorithm(t, cryptor, alg)
 	})
-	t.Run("TestSeal", func(t *testing.T) {
-		testSeal(t, cryptor, blockSize, plaintext)
+	t.Run("testAESCBCSeal", func(t *testing.T) {
+		testAESCBCSeal(t, cryptor, blockSize, mockKey.MockCleartext())
 	})
-	t.Run("TestOpen", func(t *testing.T) {
-		testOpen(t, cryptor, blockSize, ciphertext)
+	t.Run("testAESCBCOpen", func(t *testing.T) {
+		testAESCBCOpen(t, cryptor, blockSize, mockKey.MockCiphertext())
 	})
 
 }
 
-func testGenerateIV(t *testing.T, cryptor BlockEncryptionKey, key cipher.Block){
+func testGenerateAESCBCIV(t *testing.T, cryptor BlockEncryptionKey, key cipher.Block){
 	iv, err := cryptor.GenerateIV()
 	require.NoError(t, err)
 	require.NotEmpty(t, iv)
 	require.Equal(t, key.BlockSize(), len(iv))
 }
 
-func testKid(t *testing.T, cryptor BlockEncryptionKey, expectedKid string){
+func testAESCBCKid(t *testing.T, cryptor BlockEncryptionKey, expectedKid string){
 	kid := cryptor.Kid()
 	require.NotEmpty(t, kid)
 	require.Equal(t, expectedKid, kid)
 }
 
-func testAlgorithm(t *testing.T, cryptor BlockEncryptionKey, expectedAlg jose.Alg){
+func testAESCBCAlgorithm(t *testing.T, cryptor BlockEncryptionKey, expectedAlg jose.Alg){
 	alg := cryptor.Algorithm()
 	require.NotEmpty(t, alg)
 	require.Equal(t, expectedAlg, alg)
 }
 
-func testSeal(t *testing.T, cryptor BlockEncryptionKey, blockSize int, plaintext string){
-	expectedStr := "expectedciphertext"
+func testAESCBCSeal(t *testing.T, cryptor BlockEncryptionKey, blockSize int, plaintext string){
 	expected := make([]byte, blockSize)
-	copy(expected[:len(expectedStr)], expectedStr)
+	copy(expected[:len(expectedCiphertext)], expectedCiphertext)
 	ciphertext := cryptor.Seal([]byte(plaintext))
 	require.NotNil(t, ciphertext)
 	require.Equal(t, blockSize, len(ciphertext))
 	require.Equal(t, expected, ciphertext)
 }
 
-func testOpen(t *testing.T, cryptor BlockEncryptionKey, blockSize int, ciphertext string){
-	expectedStr := "expectedcleartext"
+func testAESCBCOpen(t *testing.T, cryptor BlockEncryptionKey, blockSize int, ciphertext string){
 	expected := make([]byte, blockSize)
-	copy(expected[:len(expectedStr)], expectedStr)
+	copy(expected[:len(expectedCleartext)], expectedCleartext)
 	plaintext := cryptor.Open([]byte(ciphertext))
 	require.Equal(t, blockSize, len(plaintext))
 	require.Equal(t, expected, plaintext)

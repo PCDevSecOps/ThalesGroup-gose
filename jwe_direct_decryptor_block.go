@@ -22,18 +22,39 @@
 package gose
 
 import (
+	"encoding/binary"
 	"fmt"
 	"github.com/ThalesGroup/gose/jose"
 )
 
-type JweDirectDecryptorBlockImpl struct {
+type JweDirectDecryptorBlock struct {
 	aesKey  BlockEncryptionKey
-	hmacKey HmacKey
 	jweVerifier JweHmacVerifierImpl
 }
 
+func (decryptor *JweDirectDecryptorBlock) UnmarshallRfc7516CompactJwe(marshalledJwe string) (jose.JweRfc7516Compact, error) {
+	var jwe jose.JweRfc7516Compact
+	// Unmarshall the header
+	if err := jwe.Unmarshal(marshalledJwe); err != nil {
+		return jwe, fmt.Errorf("error unmarshalling the jwe: %v", err)
+	}
+	return jwe, nil
+}
+
+func (decryptor *JweDirectDecryptorBlock) getPlaintext(jwe jose.JweRfc7516Compact) []byte {
+	plaintextBlock := decryptor.aesKey.Open(jwe.Ciphertext)
+	data := jwe.ProtectedHeader.OtherAad.B
+	// get the size of the final plaintext
+	//input, err := jwe.ProtectedHeader.OtherAad.MarshalJSON()
+	plaintextLength := binary.BigEndian.Uint64(data)
+	plaintext := make([]byte, plaintextLength)
+
+	copy(plaintext, plaintextBlock[:plaintextLength])
+	return plaintext
+}
+
 // Decrypt and verify the given JWE returning the plaintext.
-func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(marshalledJwe string) (plaintext []byte, err error) {
+func (decryptor *JweDirectDecryptorBlock) Decrypt(marshalledJwe string) (plaintext []byte, err error) {
 	// The following steps respect the RFC7516 decryption instructions :
 	// https://datatracker.ietf.org/doc/html/rfc7516
 	// The message decryption process is the reverse of the encryption
@@ -42,9 +63,8 @@ func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(marshalledJwe string) (pla
 	//   steps.  If any of these steps fail, the encrypted content cannot be
 	//   validated.
 	var jwe jose.JweRfc7516Compact
-	// Unmarshall the header
-	if err = jwe.Unmarshal(marshalledJwe); err != nil {
-		return nil, fmt.Errorf("error unmarshalling the jwe: %v", err)
+	if jwe, err = decryptor.UnmarshallRfc7516CompactJwe(marshalledJwe); err != nil {
+		return nil, err
 	}
 	// check the algorithm in header
 	if jwe.ProtectedHeader.Alg != decryptor.aesKey.Algorithm() {
@@ -67,21 +87,20 @@ func (decryptor *JweDirectDecryptorBlockImpl) Decrypt(marshalledJwe string) (pla
 	if ! integrity {
 		return nil, fmt.Errorf("error corrupted jwe : integrity check failed")
 	}
+
 	// decryption
 	if jwe.ProtectedHeader.Zip != "" {
 		err = ErrZipCompressionNotSupported
 		return
 	}
-	return decryptor.aesKey.Open(jwe.Ciphertext), nil
-
+	return decryptor.getPlaintext(jwe), nil
 }
 
-// NewJweDirectDecryptorImpl create a new instance of a JweDirectDecryptorBlockImpl.
-func NewJweDirectDecryptorImpl(aesKey BlockEncryptionKey, hmacKey HmacKey) *JweDirectDecryptorBlockImpl {
+// NewJweDirectDecryptorBlock create a new instance of a JweDirectDecryptorBlock.
+func NewJweDirectDecryptorBlock(aesKey BlockEncryptionKey, hmacKey HmacKey) *JweDirectDecryptorBlock {
 	// Create map out of our list of keys. The map is keyed in Kid.
-	decryptor := &JweDirectDecryptorBlockImpl{
+	decryptor := &JweDirectDecryptorBlock{
 		aesKey:  aesKey,
-		hmacKey: hmacKey,
 		jweVerifier: JweHmacVerifierImpl{hmacKey: hmacKey},
 	}
 	return decryptor

@@ -37,7 +37,6 @@ var (
 // operations
 type JweDirectEncryptorBlock struct {
 	aesKey  BlockEncryptionKey
-	hmacKey HmacKey
 	iv      []byte
 	jweVerifier JweHmacVerifierImpl
 }
@@ -72,7 +71,8 @@ func (encryptor *JweDirectEncryptorBlock) makeJweProtectedHeader() *jose.JweProt
 }
 
 // Encrypt encrypts the given plaintext and returns a compact JWE.
-// aad is useless here : according to RFC7516, the AAD is computed from the JWE's private header
+//   WARNING aad is useless here : according to RFC7516, the AAD is computed from the JWE's private header
+//   It is just here to statisfy the interface implementation
 func (encryptor *JweDirectEncryptorBlock) Encrypt(plaintext, aad []byte) (string, error) {
 	// The following steps respect the RFC7516 Appendix B for AES CBC and HMAC encryption instructions :
 	// https://datatracker.ietf.org/doc/html/rfc7516#appendix-B
@@ -102,10 +102,6 @@ func (encryptor *JweDirectEncryptorBlock) Encrypt(plaintext, aad []byte) (string
 	//tag := outputHmac[:(len(outputHmac) / 2)]
 	tag := outputHmac
 
-	// TODO : according to this draft : https://datatracker.ietf.org/doc/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-01#section-2.1
-	//  The returned ciphertext should be the encrypted plaintext concatenated with the tag
-	//  we should check if this syntax is supported for JWE consumers
-
 	// Create the JWE
 	// we store the length of the plaintext in the additional data held by the protected header.
 	// It can be used to return the proper plaintext after decryption.
@@ -124,7 +120,6 @@ func (encryptor *JweDirectEncryptorBlock) Encrypt(plaintext, aad []byte) (string
 func NewJweDirectEncryptorBlock(aesKey BlockEncryptionKey, hmacKey HmacKey, iv []byte) *JweDirectEncryptorBlock {
 	return &JweDirectEncryptorBlock{
 		aesKey:  aesKey,
-		hmacKey: hmacKey,
 		iv:      iv,
 		jweVerifier: JweHmacVerifierImpl{hmacKey: hmacKey},
 	}

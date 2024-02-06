@@ -135,8 +135,7 @@ type BlockEncryptionKey interface {
 
 type HmacKey interface {
 	Key
-	Algorithmed
-	// Hash method gets bytes as input and sum it all to return a hashed result in bytes
+	// Hash method gets bytes as input and sum it all to return a hashed result in a 32 bytes array
 	Hash(input []byte) []byte
 }
 

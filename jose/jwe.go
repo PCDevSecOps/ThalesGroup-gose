@@ -204,7 +204,7 @@ func (jwe *Jwe) Unmarshal(src string) (err error) {
 	return
 }
 
-func (jwe JweRfc7516Compact) Unmarshal(src string) (err error) {
+func (jwe *JweRfc7516Compact) Unmarshal(src string) (err error) {
 	// Compact JWE are divided in 5 parts :
 	//   o  Protected Header
 	//   o  Encrypted Key
@@ -236,11 +236,11 @@ func (jwe JweRfc7516Compact) Unmarshal(src string) (err error) {
 		return
 	}
 	// JWE Ciphertext
-	if jwe.Ciphertext, err = base64.RawURLEncoding.DecodeString(parts[4]); err != nil {
+	if jwe.Ciphertext, err = base64.RawURLEncoding.DecodeString(parts[3]); err != nil {
 		return
 	}
 	// Authentication Tag
-	if jwe.AuthenticationTag, err = base64.RawURLEncoding.DecodeString(parts[5]); err != nil {
+	if jwe.AuthenticationTag, err = base64.RawURLEncoding.DecodeString(parts[4]); err != nil {
 		return
 	}
 	return

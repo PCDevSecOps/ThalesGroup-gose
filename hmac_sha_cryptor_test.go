@@ -1,3 +1,4 @@
+
 // Copyright 2019 Thales e-Security, Inc
 //
 // Permission is hereby granted, free of charge, to any person obtaining
@@ -22,39 +23,29 @@
 package gose
 
 import (
-	"hash"
+	"crypto/sha256"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
-// HmacShaCryptor provides HMAC SHA functions.
-// It implements the HmacKey interface.
-// The hash SHA mechanism is held directly by the key corresponding to the key id (kid).
-// It means that if the key provides SHA-256 mechanism, then the Hash is SHA-256
-type HmacShaCryptor struct {
-	kid  string
-	hash hash.Hash
+func TestHmacShaCryptor(t *testing.T) {
+	kid := "hmac-0"
+	cryptor := NewHmacShaCryptor(kid, sha256.New())
+	t.Run("testHmacKid", func(t *testing.T) {
+		testHmacKid(t, cryptor, kid)
+	})
+	t.Run("testHmacHash", func(t *testing.T) {
+		testHmacHash(t, cryptor, []byte("hashme"))
+	})
 }
 
-func (h HmacShaCryptor) Kid() string {
-	return h.kid
+func testHmacKid(t *testing.T, cryptor HmacKey, kid string) {
+	require.Equal(t, kid, cryptor.Kid())
 }
 
-// Hash returns the result from the SHA operation executed by the provided key
-func (h HmacShaCryptor) Hash(input []byte) []byte {
-	// preprocess the size of the final output
-	outputSize := h.hash.Size()
-	// Sum() concatenates the input with the hash result
-	appendedOutput := h.hash.Sum(input)
-	// extract the hash result from the hash output
-	res := make([]byte, outputSize)
-	copy(res, appendedOutput[len(input):])
-	return res
-}
-
-// NewHmacShaCryptor create a new instance of an HmacShaCryptor from the supplied parameters.
-// It implements HmacKey
-func NewHmacShaCryptor(kid string, hash hash.Hash) HmacKey {
-	return &HmacShaCryptor{
-		kid:  kid,
-		hash: hash,
-	}
+func testHmacHash(t *testing.T, cryptor HmacKey, input []byte) {
+	sha := cryptor.Hash(input)
+	require.NotEmpty(t, sha)
+	require.Equal(t, 32, len(sha))
+	require.NotContains(t, string(sha), string(input))
 }
