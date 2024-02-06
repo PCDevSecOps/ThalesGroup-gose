@@ -30,12 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
-var (
-	expectedCiphertext = "expectedciphertext"
-	expectedCleartext = "expectedcleartext"
-)
-
 func TestAesCbcCryptor(t *testing.T) {
 	var err error
 	// init parameters

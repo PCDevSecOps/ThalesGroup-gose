@@ -7,6 +7,11 @@ import (
 	"hash"
 )
 
+var (
+	expectedCiphertext = "expectedciphertext"
+	expectedCleartext = "expectedcleartext"
+)
+
 // MockBlock extends cipher.Block interface and adds useful functions for unit tests
 type MockBlock interface {
 	cipher.Block

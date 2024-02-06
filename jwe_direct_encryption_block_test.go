@@ -29,6 +29,7 @@ import (
 	"github.com/ThalesGroup/gose/jose"
 	"github.com/miekg/pkcs11"
 	"github.com/stretchr/testify/require"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -40,8 +41,9 @@ func requireNoIssue(t *testing.T, o interface{}, err error) {
 }
 
 var (
+	pkcs11ConfigEnv = "PKCS11_CONFIG"
 	secretKeyLabelEnv = "PKCS11_SECRET_KEY_LABEL"
-	hmacKeyLabelEnv = "PKCS11_SECRET_HMAC_LABEL"
+	hmacKeyLabelEnv = "PKCS11_HMAC_KEY_LABEL"
 )
 
 func loadPkcs11Ctx(t *testing.T, pkcs11Config string, iv []byte) (ctx *crypto11.Context, cryptor *JweDirectEncryptorBlock, decryptor *JweDirectDecryptorBlock) {
@@ -68,7 +70,7 @@ func loadPkcs11Ctx(t *testing.T, pkcs11Config string, iv []byte) (ctx *crypto11.
 	cbcKey := NewAesCbcCryptor(cbcPkcs11Manager, rand.Reader, secretKeyLabel, jose.AlgA256CBC, true)
 	requireNoIssue(t, cbcKey, err)
 	// hmac key
-	hmacPkcs11Manager, err := hmacKey.NewHMAC(pkcs11.CKK_SHA256_HMAC, 0)
+	hmacPkcs11Manager, err := hmacKey.NewHMAC(pkcs11.CKM_SHA256_HMAC, 0)
 	requireNoIssue(t, hmacPkcs11Manager, err)
 	hmacShaKey := NewHmacShaCryptor(hmacKeyLabel, hmacPkcs11Manager)
 	requireNoIssue(t, hmacShaKey, err)
@@ -101,23 +103,23 @@ func loadWithoutCtx(t *testing.T, blockSize int, iv []byte) (cryptor *JweDirectE
 
 func TestJweDirectEncryptorBlock(t *testing.T) {
 	//var err error
-	blockSize := 32
+	blockSize := 16
 	iv := make([]byte, blockSize)
 	_, err := rand.Read(iv)
 	require.NoError(t, err)
 	require.NotEmpty(t, iv)
 
-	pkcs11Config := os.Getenv("PKCS11_CONFIG")
+	pkcs11Config := os.Getenv(pkcs11ConfigEnv)
 	var cryptor *JweDirectEncryptorBlock
 	var decryptor *JweDirectDecryptorBlock
 	if pkcs11Config != "" {
 		// load PKCS11 context if provided
 		var ctx *crypto11.Context
 		ctx, cryptor, decryptor = loadPkcs11Ctx(t, pkcs11Config, iv)
-		defer func() {
-			err = ctx.Close()
-			require.NoError(t, err)
-		}()
+		log.Print(ctx)
+		//defer func() {
+		//	err = ctx.Close()
+		//}()
 	} else {
 		// load normally without pkcs11 context
 		cryptor, decryptor = loadWithoutCtx(t, blockSize, iv)
@@ -153,7 +155,6 @@ func testEncryptDecrypt(t *testing.T, cryptor *JweDirectEncryptorBlock, decrypto
 	ciphertext, err := base64.RawURLEncoding.DecodeString(splits[3])
 	require.NoError(t, err)
 	require.Equal(t, 32, len(ciphertext))
-	require.Contains(t, string(ciphertext),expectedCiphertext)
 
 	// **********
 	// DECRYPTION

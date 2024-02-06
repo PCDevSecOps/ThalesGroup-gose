@@ -87,7 +87,8 @@ func (cryptor *AesCbcCryptor) Seal(plaintext []byte) []byte {
 }
 
 func (cryptor *AesCbcCryptor) Open(ciphertext []byte) (plaintext []byte) {
-	plaintext = make([]byte, getDestinationTextLength(len(plaintext), cryptor.blockCipher.BlockSize()))
+	finalSize := getDestinationTextLength(len(ciphertext), cryptor.blockCipher.BlockSize())
+	plaintext = make([]byte, finalSize)
 	cryptor.blockCipher.Decrypt(plaintext, ciphertext)
 	return plaintext
 }
