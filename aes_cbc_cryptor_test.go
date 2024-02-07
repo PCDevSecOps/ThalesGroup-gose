@@ -38,7 +38,7 @@ func TestAesCbcCryptor(t *testing.T) {
 	rng := rand.Reader
 	kid := "aes-cbc-0"
 	alg := jose.AlgA256CBC
-	blockSize := 32
+	blockSize := 16
 	iv := make([]byte, blockSize)
 	_, err = rng.Read(iv)
 	require.NoError(t, err)
@@ -57,47 +57,70 @@ func TestAesCbcCryptor(t *testing.T) {
 	t.Run("testAESCBCAlgorithm", func(t *testing.T) {
 		testAESCBCAlgorithm(t, cryptor, alg)
 	})
+	t.Run("testgetDestinationTextLength", func(t *testing.T) {
+		testgetDestinationTextLength(t, blockSize)
+	})
+
+	// test with long and short inputs to encrypt/decrypt
+	shortMockKey := NewMockBlock(blockSize, expectedShortCleartext, expectedShortCiphertext)
+	shortCryptor := NewAesCbcCryptor(shortMockKey, rng, kid, alg, true)
+	require.NoError(t, err)
+	require.NotNil(t, shortCryptor)
 	t.Run("testAESCBCSeal", func(t *testing.T) {
-		testAESCBCSeal(t, cryptor, blockSize, mockKey.MockCleartext())
+		testAESCBCSeal(t, cryptor, blockSize, mockKey)
+		testAESCBCSeal(t, shortCryptor, blockSize, shortMockKey)
 	})
 	t.Run("testAESCBCOpen", func(t *testing.T) {
-		testAESCBCOpen(t, cryptor, blockSize, mockKey.MockCiphertext())
+		testAESCBCOpen(t, cryptor, blockSize, mockKey)
+		testAESCBCOpen(t, shortCryptor, blockSize, shortMockKey)
 	})
 
 }
 
-func testGenerateAESCBCIV(t *testing.T, cryptor BlockEncryptionKey, key cipher.Block){
+func testgetDestinationTextLength(t *testing.T, blocksize int) {
+	smaller := blocksize - 1
+	longer := blocksize + 1
+	muchLonger := blocksize*2 + 1
+	// if smaller than blocksize, should return blocksize
+	require.Equal(t, blocksize, getDestinationTextLength(smaller, blocksize))
+	// otherwise, should always return inputlength + blocksize
+	require.Equal(t, blocksize*2, getDestinationTextLength(blocksize, blocksize))
+	require.Equal(t, blocksize*2, getDestinationTextLength(longer, blocksize))
+	require.Equal(t, blocksize*3, getDestinationTextLength(muchLonger, blocksize))
+}
+
+func testGenerateAESCBCIV(t *testing.T, cryptor BlockEncryptionKey, key cipher.Block) {
 	iv, err := cryptor.GenerateIV()
 	require.NoError(t, err)
 	require.NotEmpty(t, iv)
 	require.Equal(t, key.BlockSize(), len(iv))
 }
 
-func testAESCBCKid(t *testing.T, cryptor BlockEncryptionKey, expectedKid string){
+func testAESCBCKid(t *testing.T, cryptor BlockEncryptionKey, expectedKid string) {
 	kid := cryptor.Kid()
 	require.NotEmpty(t, kid)
 	require.Equal(t, expectedKid, kid)
 }
 
-func testAESCBCAlgorithm(t *testing.T, cryptor BlockEncryptionKey, expectedAlg jose.Alg){
+func testAESCBCAlgorithm(t *testing.T, cryptor BlockEncryptionKey, expectedAlg jose.Alg) {
 	alg := cryptor.Algorithm()
 	require.NotEmpty(t, alg)
 	require.Equal(t, expectedAlg, alg)
 }
 
-func testAESCBCSeal(t *testing.T, cryptor BlockEncryptionKey, blockSize int, plaintext string){
-	expected := make([]byte, blockSize)
-	copy(expected[:len(expectedCiphertext)], expectedCiphertext)
+func testAESCBCSeal(t *testing.T, cryptor BlockEncryptionKey, blockSize int, mock MockBlock) {
+	plaintext := mock.MockCleartext()
+	expected := make([]byte, getDestinationTextLength(len(plaintext), blockSize))
 	ciphertext := cryptor.Seal([]byte(plaintext))
 	require.NotNil(t, ciphertext)
-	require.Equal(t, blockSize, len(ciphertext))
-	require.Equal(t, expected, ciphertext)
+	require.Equal(t, len(expected), len(ciphertext))
+	require.Contains(t, string(ciphertext), mock.MockCiphertext())
 }
 
-func testAESCBCOpen(t *testing.T, cryptor BlockEncryptionKey, blockSize int, ciphertext string){
-	expected := make([]byte, blockSize)
-	copy(expected[:len(expectedCleartext)], expectedCleartext)
+func testAESCBCOpen(t *testing.T, cryptor BlockEncryptionKey, blockSize int, mock MockBlock) {
+	ciphertext := mock.MockCiphertext()
+	expected := make([]byte, getDestinationTextLength(len(ciphertext), blockSize))
 	plaintext := cryptor.Open([]byte(ciphertext))
-	require.Equal(t, blockSize, len(plaintext))
-	require.Equal(t, expected, plaintext)
+	require.Equal(t, len(expected), len(plaintext))
+	require.Contains(t, string(plaintext), mock.MockCleartext())
 }

@@ -159,7 +159,7 @@ func testEncryptDecrypt(t *testing.T, cryptor *JweDirectEncryptorBlock, decrypto
 	// **********
 	// DECRYPTION
 	// **********
-	plaintext, err := decryptor.Decrypt(marshalledJwe)
+	plaintext, _, err := decryptor.Decrypt(marshalledJwe)
 	require.NoError(t, err)
 
 	// decryption

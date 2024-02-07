@@ -9,7 +9,9 @@ import (
 
 var (
 	expectedCiphertext = "expectedciphertext"
+	expectedShortCiphertext = "ciphertext"
 	expectedCleartext = "expectedcleartext"
+	expectedShortCleartext = "cleartext"
 )
 
 // MockBlock extends cipher.Block interface and adds useful functions for unit tests

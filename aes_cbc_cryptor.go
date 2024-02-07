@@ -70,10 +70,10 @@ func (cryptor *AesCbcCryptor) Algorithm() jose.Alg {
 func getDestinationTextLength(inputLength int, blockSize int) int {
 	var finalSize int
 	if multiplier := inputLength / blockSize; multiplier > 0 {
-		finalSize = multiplier*blockSize
-		if remain := inputLength % blockSize; remain > 0 {
-			finalSize = finalSize + blockSize
-		}
+		finalSize = multiplier*blockSize + blockSize
+		//if remain := inputLength % blockSize; remain > 0 {
+		//	finalSize = finalSize + blockSize
+		//}
 	} else {
 		finalSize = blockSize
 	}
