@@ -54,7 +54,8 @@ func (decryptor *JweDirectDecryptorBlock) getPlaintext(jwe jose.JweRfc7516Compac
 }
 
 // Decrypt and verify the given JWE returning the plaintext.
-func (decryptor *JweDirectDecryptorBlock) Decrypt(marshalledJwe string) (plaintext []byte, err error) {
+// never return a non nil aad. aad is just here to satisfy the JweDecryptor interface
+func (decryptor *JweDirectDecryptorBlock) Decrypt(marshalledJwe string) (plaintext, aad []byte, err error) {
 	// The following steps respect the RFC7516 decryption instructions :
 	// https://datatracker.ietf.org/doc/html/rfc7516
 	// The message decryption process is the reverse of the encryption
@@ -64,28 +65,28 @@ func (decryptor *JweDirectDecryptorBlock) Decrypt(marshalledJwe string) (plainte
 	//   validated.
 	var jwe jose.JweRfc7516Compact
 	if jwe, err = decryptor.UnmarshallRfc7516CompactJwe(marshalledJwe); err != nil {
-		return nil, err
+		return nil,nil,  err
 	}
 	// check the algorithm in header
 	if jwe.ProtectedHeader.Alg != decryptor.aesKey.Algorithm() {
-		return nil, fmt.Errorf("error checking the JWE protected header's algorthim. algorithm is '%v' but expected is '%v'", jwe.ProtectedHeader.Alg, decryptor.aesKey.Algorithm())
+		return nil, nil, fmt.Errorf("error checking the JWE protected header's algorthim. algorithm is '%v' but expected is '%v'", jwe.ProtectedHeader.Alg, decryptor.aesKey.Algorithm())
 	}
 	// check the keys for direct encryption
 	if jwe.ProtectedHeader.Kid != decryptor.aesKey.Kid() {
-		return nil, fmt.Errorf("error checking the Key ID for decryption. ID is '%v' but expected is '%v'", jwe.ProtectedHeader.Kid, decryptor.aesKey.Kid())
+		return nil, nil, fmt.Errorf("error checking the Key ID for decryption. ID is '%v' but expected is '%v'", jwe.ProtectedHeader.Kid, decryptor.aesKey.Kid())
 	}
 	// check that the CEK is empty for direct encryption
 	if len(jwe.EncryptedKey) != 0 {
-		return nil, fmt.Errorf("error checking the encrypted key. Should be empty for empty encryption but was '%d' bytes long", len(jwe.EncryptedKey))
+		return nil, nil, fmt.Errorf("error checking the encrypted key. Should be empty for empty encryption but was '%d' bytes long", len(jwe.EncryptedKey))
 	}
 
 	// INTEGRITY CHECK before decryption
 	integrity, err := decryptor.jweVerifier.VerifyCompact(jwe);
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if ! integrity {
-		return nil, fmt.Errorf("error corrupted jwe : integrity check failed")
+		return nil, nil, fmt.Errorf("error corrupted jwe : integrity check failed")
 	}
 
 	// decryption
@@ -93,7 +94,7 @@ func (decryptor *JweDirectDecryptorBlock) Decrypt(marshalledJwe string) (plainte
 		err = ErrZipCompressionNotSupported
 		return
 	}
-	return decryptor.getPlaintext(jwe), nil
+	return decryptor.getPlaintext(jwe), nil, nil
 }
 
 // NewJweDirectDecryptorBlock create a new instance of a JweDirectDecryptorBlock.
