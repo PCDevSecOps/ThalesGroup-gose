@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ThalesIgnite/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 // JwtVerifierImpl implements the JWT Verification API

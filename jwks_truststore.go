@@ -29,7 +29,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ThalesIgnite/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 // Interface wrapper to allow mocking of http client.

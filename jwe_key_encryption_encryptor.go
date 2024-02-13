@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"github.com/ThalesIgnite/gose/jose"
+	"github.com/ThalesGroup/gose/jose"
 )
 
 // JweRsaKeyEncryptionEncryptorImpl implements RSA Key Encryption CEK mode.
@@ -49,7 +49,7 @@ func (e *JweRsaKeyEncryptionEncryptorImpl) Encrypt(plaintext, aad []byte) (strin
 				Alg: jose.AlgRSAOAEP,
 				Kid: e.recipientJwk.Kid(),
 			},
-			Enc:                   algToEncMap[cekJwk.Alg()],
+			Enc:                   gcmAlgToEncMap[cekJwk.Alg()],
 			JweCustomHeaderFields: customHeaderFields,
 		},
 		EncryptedKey: encryptedKey,
